@@ -15,6 +15,7 @@ class WindowManager
     static MainWindow mw;
     //окна для управления
     static std::vector<std::shared_ptr<BaseWindow>> windows;
+    static bool loadingFlag;
 
     //максимальный id среди текущих окон, увеличивается или изменяется при добавлении/удалении окна
     static int maxID;
@@ -32,6 +33,7 @@ public:
     static void changeOrder();
     //удаление окна под идентификатором
     static void removeWindow(HWND _hwnd);
+    static void windowActivated(HWND _hwnd);
 
     //начало обработки сообщений от ОС
     int startWindowsControll();

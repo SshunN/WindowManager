@@ -9,6 +9,7 @@ using namespace std;
 MainWindow WindowManager::mw;
 std::vector<std::shared_ptr<BaseWindow>> WindowManager::windows;
 int WindowManager::maxID = -1;
+bool WindowManager::loadingFlag = false;
 
 typedef std::pair<HWND, BaseWindow&> bwPair;
 
@@ -16,6 +17,8 @@ std::string configFile = "config.ini";
 
 void WindowManager::loadWindows()
 {
+    loadingFlag = true;
+
     Config conf;
     std::vector<int> ids = conf.read(configFile);
     
@@ -29,6 +32,8 @@ void WindowManager::loadWindows()
     mw = MainWindow(Vec2D(800, 400), Vec2D(300, 300), WS_OVERLAPPEDWINDOW | WS_EX_TOPMOST, IDM_MAINWINDOW, nullptr);
     mw.show();
     mw.setParent(HWND_TOPMOST);     //окно контроля всегда наверху
+
+    loadingFlag = false;
 }
 
 void WindowManager::addWindow(const std::string &title, int id)
@@ -118,12 +123,48 @@ LRESULT CALLBACK WindowManager::procEvents(HWND hWnd, UINT message, WPARAM wPara
             removeWindow(hWnd);     //если закрыто простое окно - удаление из массива окон
         break;
     }
+    case WM_ACTIVATE:
+    {
+        int wmId = LOWORD(wParam);
+        switch (wmId)
+        {
+        case WA_ACTIVE:
+        {
+            if (!loadingFlag && hWnd != mw.getWindInd()) windowActivated(hWnd);
+            break;
+        }
+        case WA_CLICKACTIVE:
+        {
+            if (!loadingFlag && hWnd != mw.getWindInd()) windowActivated(hWnd);
+            break;
+        }
+        default: break;
+        }
+        break;
+    }
 
     default:
         //выход приложения
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void WindowManager::windowActivated(HWND _hwnd)
+{
+    for (int i(0); i < windows.size(); i++)
+    {
+        std::shared_ptr<BaseWindow> &w = windows[i];
+        if (w->getWindInd() == _hwnd)
+        {
+            std::vector<std::shared_ptr<BaseWindow>> vec;
+            for (int j(0); j < i; j++) vec.push_back(windows[j]);
+            for (int j(i + 1); j < windows.size(); j++) vec.push_back(windows[j]);
+            vec.push_back(w);
+            windows = vec;
+            break;
+        }
+    }
 }
 
 void WindowManager::changeOrder()
